@@ -87,9 +87,9 @@ Building an audio engine is a fight against time and network infrastructure. Her
 
 ## 3. The God-Tier File Architecture
 
-To support our Transport Agnostic design, the network logic is heavily decoupled from the audio logic.
+To support our Transport Agnostic design, the network logic is heavily decoupled from the audio logic. All components will live in this single **Monorepo** to ensure code sync between the Android and Windows builds.
 
-### Common Code (C++ CMake) -> Shared via Git Submodule
+### Shared Core Code (C++ CMake) -> Integrated directly into Monorepo
 
 ```text
 shared_core/
