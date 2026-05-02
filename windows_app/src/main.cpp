@@ -5,6 +5,7 @@
 #include <chrono>
 #include "TcpUsbTransport.h"
 #include "WasapiRender.h"
+#include "WasapiLoopback.h"
 #include "OpusCodec.h"
 
 int main() {
@@ -28,7 +29,7 @@ int main() {
     const int FRAME_SIZE = 960; // 20ms at 48kHz
 
     // Register a callback to handle incoming packets from the Android app
-    transport.SetReceiveCallback([&audioRender, &opusDecoder](const std::vector<uint8_t>& data) {
+    transport.SetReceiveCallback([&audioRender, &opusDecoder, FRAME_SIZE](const std::vector<uint8_t>& data) {
         // Decompress the Opus payload back into raw PCM audio
         std::vector<int16_t> pcmData = opusDecoder.Decode(data.data(), data.size(), FRAME_SIZE);
         
@@ -42,6 +43,32 @@ int main() {
         std::cerr << "CRITICAL ERROR: Failed to initialize transport layer." << std::endl;
         return 1;
     }
+
+    audiostream::windows::WasapiLoopback audioLoopback;
+    if (!audioLoopback.Initialize()) {
+        std::cerr << "CRITICAL ERROR: Failed to initialize WASAPI Loopback." << std::endl;
+        return 1;
+    }
+    audioLoopback.Start();
+
+    audiostream::codec::OpusAudioEncoder opusEncoder(48000, 1);
+    
+    // Background thread to continuously grab PC audio and send to Android
+    std::atomic<bool> sending{true};
+    std::thread senderThread([&]() {
+        std::vector<int16_t> pcmBuffer;
+        while (sending) {
+            if (audioLoopback.PopAudioFrame(pcmBuffer, FRAME_SIZE)) {
+                std::vector<uint8_t> opusPayload = opusEncoder.Encode(pcmBuffer.data(), FRAME_SIZE);
+                if (!opusPayload.empty()) {
+                    transport.Send(opusPayload);
+                }
+                pcmBuffer.clear();
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            }
+        }
+    });
 
     std::cout << "\nHost is actively running." << std::endl;
     std::cout << "Run 'windows_app/scripts/setup_adb_tunnel.bat' to ensure the USB bridge is open." << std::endl;

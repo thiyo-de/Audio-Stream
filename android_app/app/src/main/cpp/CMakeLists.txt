@@ -10,6 +10,7 @@ find_package(oboe REQUIRED CONFIG)
 add_library(audiostream_jni SHARED
     jni_bridge.cpp
     OboeAudio.cpp
+    OboePlayback.cpp
 )
 
 target_link_libraries(audiostream_jni

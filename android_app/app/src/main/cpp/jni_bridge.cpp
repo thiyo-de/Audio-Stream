@@ -6,6 +6,7 @@
 #include <android/log.h>
 #include "TcpUsbTransport.h"
 #include "OboeAudio.h"
+#include "OboePlayback.h"
 #include "OpusCodec.h"
 
 #define LOG_TAG "NativeEngine"
@@ -14,7 +15,9 @@
 
 std::unique_ptr<audiostream::transport::TcpUsbTransport> g_transport;
 std::unique_ptr<audiostream::android::OboeAudio> g_oboeAudio;
+std::unique_ptr<audiostream::android::OboePlayback> g_oboePlayback;
 std::unique_ptr<audiostream::codec::OpusAudioEncoder> g_opusEncoder;
+std::unique_ptr<audiostream::codec::OpusAudioDecoder> g_opusDecoder;
 std::atomic<bool> g_audioSenderRunning{false};
 std::thread g_audioSenderThread;
 
@@ -30,17 +33,24 @@ Java_com_audiostream_NativeEngine_connectToHost(JNIEnv* env, jobject /* this */,
     g_transport = std::make_unique<audiostream::transport::TcpUsbTransport>(false, ip, port);
     
     g_transport->SetReceiveCallback([](const std::vector<uint8_t>& data) {
-        std::string text(data.begin(), data.end());
-        LOGI("Received from Windows: %s", text.c_str());
+        if (g_opusDecoder && g_oboePlayback) {
+            std::vector<int16_t> pcmData = g_opusDecoder->Decode(data.data(), data.size(), 960);
+            if (!pcmData.empty()) {
+                g_oboePlayback->PushAudioData(pcmData.data(), pcmData.size());
+            }
+        }
     });
 
     bool success = g_transport->Initialize();
     if (success) {
         LOGI("Successfully connected to host!");
         
-        // Start Microphone Capture
+        g_oboePlayback = std::make_unique<audiostream::android::OboePlayback>();
         g_oboeAudio = std::make_unique<audiostream::android::OboeAudio>();
         g_opusEncoder = std::make_unique<audiostream::codec::OpusAudioEncoder>(48000, 1);
+        g_opusDecoder = std::make_unique<audiostream::codec::OpusAudioDecoder>(48000, 1);
+        
+        g_oboePlayback->StartPlayback();
         
         if (g_oboeAudio->StartCapture()) {
             g_audioSenderRunning = true;
@@ -96,6 +106,11 @@ Java_com_audiostream_NativeEngine_disconnect(JNIEnv* /* env */, jobject /* this 
     if (g_oboeAudio) {
         g_oboeAudio->StopCapture();
         g_oboeAudio.reset();
+    }
+    
+    if (g_oboePlayback) {
+        g_oboePlayback->StopPlayback();
+        g_oboePlayback.reset();
     }
 
     if (g_transport) {
