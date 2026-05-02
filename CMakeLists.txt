@@ -7,5 +7,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Add the shared core logic as a subdirectory
 add_subdirectory(shared_core)
 
-# Future:
-# add_subdirectory(windows_app)
+# Add the Windows Host executable
+add_subdirectory(windows_app)
