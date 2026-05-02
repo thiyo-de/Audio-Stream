@@ -1,9 +1,9 @@
 #include <iostream>
 #include <vector>
-#include <string>
 #include <thread>
 #include <chrono>
 #include "TcpUsbTransport.h"
+#include "WasapiRender.h"
 
 int main() {
     std::cout << "=======================================" << std::endl;
@@ -14,12 +14,21 @@ int main() {
     // We bind to 0.0.0.0 (all interfaces) on port 5000.
     // The ADB tunnel will forward Android traffic to this port on localhost.
     audiostream::transport::TcpUsbTransport transport(true, "0.0.0.0", 5000);
+    
+    audiostream::windows::WasapiRender audioRender;
+    if (!audioRender.Initialize()) {
+        std::cerr << "CRITICAL ERROR: Failed to initialize WASAPI Render." << std::endl;
+        return 1;
+    }
+    audioRender.Start();
 
     // Register a callback to handle incoming packets from the Android app
-    transport.SetReceiveCallback([](const std::vector<uint8_t>& data) {
-        // For Phase 1, we just print out the raw string data received to prove the tunnel works.
-        std::string text(data.begin(), data.end());
-        std::cout << "[Android] -> " << text << std::endl;
+    transport.SetReceiveCallback([&audioRender](const std::vector<uint8_t>& data) {
+        // In Phase 2, we receive raw PCM int16_t array from Oboe via network
+        // Size of int16_t is 2 bytes, so numFrames = data.size() / 2
+        size_t numFrames = data.size() / sizeof(int16_t);
+        const int16_t* pcmData = reinterpret_cast<const int16_t*>(data.data());
+        audioRender.PushAudioData(pcmData, numFrames);
     });
 
     // Start listening
