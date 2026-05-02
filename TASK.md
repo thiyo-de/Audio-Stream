@@ -26,7 +26,7 @@ This document tracks the live progress of the AudioStream project.
 ## ⏳ Phase 4: Office Networking Fallbacks
 *Alternatives to using the USB cable every time.*
 - [ ] **WiFi Direct / Local Hotspot:** Allow the Android app to automatically spin up a private WiFi network, bypassing strict office Ethernet isolation.
-- [ ] **UDP Transport:** Build `UdpTransport.cpp` as a fallback for standard home WiFi networks.
+- [x] **UDP Transport:** Build `UdpTransport.cpp` as a fallback for standard home WiFi networks.
 
 ## ⏳ Phase 5: Virtual Microphone Integration
 *Routing audio as a real system microphone.*

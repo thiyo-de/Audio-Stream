@@ -14,6 +14,7 @@ FetchContent_MakeAvailable(opus)
 
 add_library(shared_core STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/transport/TcpUsbTransport.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/transport/UdpTransport.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/OpusCodec.cpp
 )
 
