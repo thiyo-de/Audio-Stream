@@ -12,9 +12,9 @@ This document tracks the live progress of the AudioStream project.
 
 ## ⏳ Phase 2: Raw Audio Processing
 *We have the network pipe; now we need to hook up microphones and speakers.*
-- [ ] **Android Oboe Integration:** Integrate Google's Oboe C++ Library to capture raw microphone data at ultra-low latency.
+- [x] **Android Oboe Integration:** Integrate Google's Oboe C++ Library to capture raw microphone data at ultra-low latency.
 - [ ] **Windows WASAPI Integration:** Use WASAPI in Exclusive Mode to capture PC system audio and play incoming Android audio.
-- [ ] **Lock-Free Queues:** Implement `moodycamel::ReaderWriterQueue` to pass audio between network and speaker threads without garbage collection spikes.
+- [x] **Lock-Free Queues:** Implement `LockFreeQueue` to pass audio between network and speaker threads without garbage collection spikes.
 
 ## ⏳ Phase 3: Codec & Resilience (The "Godly" Layer)
 *Raw audio is too large. We need compression and stability.*

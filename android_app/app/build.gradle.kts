@@ -24,6 +24,7 @@ android {
 
     buildFeatures {
         compose = true
+        prefab = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -46,4 +47,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    
+    // Google Oboe for Low Latency C++ Audio
+    implementation("com.google.oboe:oboe:1.8.1")
 }
