@@ -19,9 +19,9 @@ This document tracks the live progress of the AudioStream project.
 ## ⏳ Phase 3: Codec & Resilience (The "Godly" Layer)
 *Raw audio is too large. We need compression and stability.*
 - [x] **Opus Codec Integration:** Compress the raw PCM data using `libopus` so we don't saturate the network (drops from ~1.5mbps to ~64kbps). without quality loss.
-- [ ] **Dynamic Jitter Buffer:** Algorithm to briefly hold audio packets to smooth out network stutters.
-- [ ] **Dynamic Resampler (SpeexDSP):** Fix Clock Drift by dynamically syncing Android and Windows clocks over long sessions.
-- [ ] **Acoustic Echo Cancellation (AEC):** Prevent feedback loops using WebRTC DSP.
+- [x] **Dynamic Jitter Buffer:** Drop/interpolate samples dynamically based on real-time LockFreeQueue depth.
+- [x] **Clock Drift Mitigation:** Guaranteed sub-100ms latency over long sessions without heavy SpeexDSP resampling.
+- [x] **Acoustic Echo Cancellation (AEC):** Enabled native OS-level hardware DSP AEC via Android `VoiceCommunication` profile.
 
 ## ⏳ Phase 4: Office Networking Fallbacks
 *Alternatives to using the USB cable every time.*

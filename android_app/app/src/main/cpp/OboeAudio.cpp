@@ -25,6 +25,7 @@ bool OboeAudio::StartCapture() {
            ->setFormat(oboe::AudioFormat::I16) // 16-bit PCM
            ->setChannelCount(oboe::ChannelCount::Mono) // 1 Channel (Mic)
            ->setSampleRate(48000) // Standard for VoIP
+           ->setInputPreset(oboe::InputPreset::VoiceCommunication) // Hardware AEC
            ->setDataCallback(this);
 
     oboe::Result result = builder.openStream(m_recordingStream);

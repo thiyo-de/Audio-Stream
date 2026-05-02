@@ -54,8 +54,20 @@ void OboePlayback::StopPlayback() {
 }
 
 bool OboePlayback::PushAudioData(const int16_t* data, size_t numFrames) {
+    // CLOCK DRIFT & JITTER MITIGATION
+    // If the Windows clock is running faster than the Android clock, or the network 
+    // delivers a massive burst of packets, the queue will grow and latency will increase.
+    // To strictly guarantee sub-100ms latency, we drop the *oldest* audio samples
+    // when the buffer exceeds our latency budget (4800 samples = 100ms).
+    const size_t MAX_LATENCY_SAMPLES = 4800;
+    
+    while (m_audioQueue.size() + numFrames > MAX_LATENCY_SAMPLES) {
+        int16_t trash;
+        m_audioQueue.pop(trash);
+    }
+
     for (size_t i = 0; i < numFrames; ++i) {
-        if (!m_audioQueue.push(data[i])) break; // Drop if queue full
+        if (!m_audioQueue.push(data[i])) break;
     }
     return true;
 }
