@@ -1,6 +1,8 @@
 #include <jni.h>
 #include <string>
 #include <vector>
+#include <atomic>
+#include <thread>
 #include <android/log.h>
 #include "TcpUsbTransport.h"
 #include "OboeAudio.h"
