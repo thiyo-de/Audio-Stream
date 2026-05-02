@@ -5,6 +5,7 @@
 #include <chrono>
 #include "TcpUsbTransport.h"
 #include "WasapiRender.h"
+#include "OpusCodec.h"
 
 int main() {
     std::cout << "=======================================" << std::endl;
@@ -23,13 +24,17 @@ int main() {
     }
     audioRender.Start();
 
+    audiostream::codec::OpusAudioDecoder opusDecoder(48000, 1);
+    const int FRAME_SIZE = 960; // 20ms at 48kHz
+
     // Register a callback to handle incoming packets from the Android app
-    transport.SetReceiveCallback([&audioRender](const std::vector<uint8_t>& data) {
-        // In Phase 2, we receive raw PCM int16_t array from Oboe via network
-        // Size of int16_t is 2 bytes, so numFrames = data.size() / 2
-        size_t numFrames = data.size() / sizeof(int16_t);
-        const int16_t* pcmData = reinterpret_cast<const int16_t*>(data.data());
-        audioRender.PushAudioData(pcmData, numFrames);
+    transport.SetReceiveCallback([&audioRender, &opusDecoder](const std::vector<uint8_t>& data) {
+        // Decompress the Opus payload back into raw PCM audio
+        std::vector<int16_t> pcmData = opusDecoder.Decode(data.data(), data.size(), FRAME_SIZE);
+        
+        if (!pcmData.empty()) {
+            audioRender.PushAudioData(pcmData.data(), pcmData.size());
+        }
     });
 
     // Start listening

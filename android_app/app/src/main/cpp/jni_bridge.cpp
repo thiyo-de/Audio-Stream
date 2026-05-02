@@ -6,6 +6,7 @@
 #include <android/log.h>
 #include "TcpUsbTransport.h"
 #include "OboeAudio.h"
+#include "OpusCodec.h"
 
 #define LOG_TAG "NativeEngine"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -13,6 +14,7 @@
 
 std::unique_ptr<audiostream::transport::TcpUsbTransport> g_transport;
 std::unique_ptr<audiostream::android::OboeAudio> g_oboeAudio;
+std::unique_ptr<audiostream::codec::OpusAudioEncoder> g_opusEncoder;
 std::atomic<bool> g_audioSenderRunning{false};
 std::thread g_audioSenderThread;
 
@@ -38,19 +40,27 @@ Java_com_audiostream_NativeEngine_connectToHost(JNIEnv* env, jobject /* this */,
         
         // Start Microphone Capture
         g_oboeAudio = std::make_unique<audiostream::android::OboeAudio>();
+        g_opusEncoder = std::make_unique<audiostream::codec::OpusAudioEncoder>(48000, 1);
+        
         if (g_oboeAudio->StartCapture()) {
             g_audioSenderRunning = true;
             g_audioSenderThread = std::thread([]() {
                 std::vector<int16_t> pcmBuffer;
+                // 960 samples = 20ms at 48kHz
+                const int FRAME_SIZE = 960;
+                
                 while (g_audioSenderRunning) {
-                    if (g_oboeAudio->PopAudioData(pcmBuffer)) {
-                        // Cast int16_t vector to uint8_t vector
-                        auto bytePtr = reinterpret_cast<uint8_t*>(pcmBuffer.data());
-                        std::vector<uint8_t> payload(bytePtr, bytePtr + pcmBuffer.size() * sizeof(int16_t));
-                        g_transport->Send(payload);
+                    if (g_oboeAudio->PopAudioFrame(pcmBuffer, FRAME_SIZE)) {
+                        // Encode the raw PCM into tiny Opus compressed bytes
+                        std::vector<uint8_t> opusPayload = g_opusEncoder->Encode(pcmBuffer.data(), FRAME_SIZE);
+                        if (!opusPayload.empty()) {
+                            g_transport->Send(opusPayload);
+                        }
                         pcmBuffer.clear();
+                    } else {
+                        // Sleep briefly if not enough data yet
+                        std::this_thread::sleep_for(std::chrono::milliseconds(2));
                     }
-                    std::this_thread::sleep_for(std::chrono::milliseconds(2)); // Tick every 2ms
                 }
             });
         }

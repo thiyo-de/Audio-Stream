@@ -16,8 +16,8 @@ public:
     bool StartCapture();
     void StopCapture();
 
-    // The network thread calls this to grab the latest audio to send over the USB tunnel
-    bool PopAudioData(std::vector<int16_t>& outData);
+    // The network thread calls this to grab an exact frame of audio (e.g. 960 samples)
+    bool PopAudioFrame(std::vector<int16_t>& outData, int exactSamples);
 
     // AudioStreamDataCallback override (called by OS Audio Thread)
     oboe::DataCallbackResult onAudioReady(

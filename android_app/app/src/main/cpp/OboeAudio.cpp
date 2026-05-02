@@ -53,13 +53,18 @@ void OboeAudio::StopCapture() {
     }
 }
 
-bool OboeAudio::PopAudioData(std::vector<int16_t>& outData) {
-    int16_t sample;
-    // Drain the queue into the output vector (Network thread calls this)
-    while (m_audioQueue.pop(sample)) {
-        outData.push_back(sample);
+bool OboeAudio::PopAudioFrame(std::vector<int16_t>& outData, int exactSamples) {
+    if (m_audioQueue.size() < exactSamples) {
+        return false; // Not enough data for a full Opus frame yet
     }
-    return !outData.empty();
+
+    int16_t sample;
+    for (int i = 0; i < exactSamples; ++i) {
+        if (m_audioQueue.pop(sample)) {
+            outData.push_back(sample);
+        }
+    }
+    return true;
 }
 
 oboe::DataCallbackResult OboeAudio::onAudioReady(
